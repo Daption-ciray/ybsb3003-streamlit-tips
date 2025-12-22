@@ -11,31 +11,26 @@ from sklearn.metrics import mean_squared_error, r2_score
 @st.cache_data
 def load_data() -> pd.DataFrame:
     """
-    Load an example transactional-style dataset.
-
-    We use the classic 'tips' dataset (restaurant bills) hosted on GitHub.
-    This plays the same role as the Online Retail dataset in the original exercise.
+    Load the 'tips' dataset (restaurant bills) hosted on GitHub and
+    construct additional columns for analysis.
     """
     url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv"
     df = pd.read_csv(url)
 
-    # Create fields analogous to the original exercise for teaching purposes
     # Quantity  -> number of people at table
     # UnitPrice -> average spend per person (approx.)
     df["Quantity"] = df["size"]
     df["UnitPrice"] = df["total_bill"] / df["size"]
 
-    # Create a pseudo-date column to mimic transactional time series
-    # (here we just spread rows over a date range deterministically)
+    # Create a pseudo-date column for a simple transactional time series
     n = len(df)
     df = df.sort_index().reset_index(drop=True)
     df["InvoiceDate"] = pd.date_range(start="2021-01-01", periods=n, freq="H")
 
-    # Country analogue: use 'day' column as "Country-like" categorical variable
-    # (different groups with different patterns)
+    # Use 'day' column as a country-like categorical variable
     df["Country"] = df["day"]
 
-    # Create Revenue as in the original exercise
+    # Create Revenue
     df["Revenue"] = df["Quantity"] * df["UnitPrice"]
 
     # Add a simple transaction ID
@@ -303,15 +298,14 @@ This helps in staffing, promotions, and pricing decisions.
 
 
 def main() -> None:
-    st.set_page_config(page_title="Programming for Data Science – Streamlit Exercise", layout="wide")
-    st.title("Streamlit Exercise – Adapted from Online Retail Example")
+    st.set_page_config(page_title="Programming for Data Science – Tips Dataset App", layout="wide")
+    st.title("Programming for Data Science – Tips Dataset Dashboard")
 
     st.markdown(
         """
-This app takes the original *Online Retail* assignment and adapts it to a different dataset:
-the classic **tips** dataset (restaurant bills).  
-The same analytical ideas (tables, structure, categorical charts, Revenue, PCA, feature selection,
-Random Forest, and an integrated dashboard) are demonstrated here.
+This app explores the classic **tips** dataset (restaurant bills) with a set of views:
+tables, structure information, categorical charts, Revenue analysis, PCA, feature selection,
+Random Forest modelling, and an integrated dashboard.
 """
     )
 

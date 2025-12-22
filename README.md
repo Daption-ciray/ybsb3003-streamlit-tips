@@ -1,26 +1,22 @@
-## Streamlit Exercise – Adapted from Online Retail Assignment
+## Programming for Data Science – Tips Dataset Dashboard
 
-This project implements the **YBSB3003 – Programming for Data Science** Streamlit assignment,
-but using a **different dataset**.  
-Instead of the original *Online Retail* data, we use the classic **tips** dataset
-(restaurant bills) as an example and apply the same analytical ideas.
+This project builds an interactive Streamlit dashboard on top of the classic **tips** dataset
+(restaurant bills). It demonstrates common data science steps such as exploratory analysis,
+visualization, PCA, feature selection and Random Forest modelling within a single web app.
 
 ### Dataset
 
 - **Source**: `https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv`
 - **Original columns (examples)**: `total_bill`, `tip`, `sex`, `smoker`, `day`, `time`, `size`
 
-To mimic the original *Online Retail* variables, the app creates:
+The app additionally creates a few helper columns for analysis:
 
-- `Quantity`  → `size` (number of people at the table)
-- `UnitPrice` → `total_bill / size` (approximate spend per person)
-- `InvoiceDate` → synthetic hourly timestamps
-- `Country` → `day` (different days treated as different "country-like" segments)
-- `Revenue` → `Quantity * UnitPrice`
-- `InvoiceNo` → simple running transaction id
-
-So the **logic of the assignment** (first 10 rows, structure info, categorical charts,
-Revenue, PCA, Random Forest, dashboard, etc.) is preserved, but on a different dataset.
+- `Quantity`  → `size` (number of people at the table)  
+- `UnitPrice` → `total_bill / size` (approximate spend per person)  
+- `InvoiceDate` → synthetic hourly timestamps  
+- `Country` → `day` (different days treated as different groups/segments)  
+- `Revenue` → `Quantity * UnitPrice`  
+- `InvoiceNo` → simple running transaction id  
 
 ### Implemented Tasks (1–12)
 
