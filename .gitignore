@@ -20,7 +20,7 @@ env/
 
 # Streamlit & cache
 .streamlit/secrets.toml
-.streamlit/config.toml
+# .streamlit/config.toml  # Keep config.toml in repo (app name, theme settings)
 .streamlit/cache/
 .streamlit/state/
 .streamlit/.browser
@@ -31,5 +31,6 @@ Thumbs.db
 
 # Logs
 *.log
+
 
 

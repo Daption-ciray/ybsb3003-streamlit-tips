@@ -59,8 +59,8 @@ def show_categorical_pie(df: pd.DataFrame) -> None:
     st.subheader("3. Categorical distribution (pie chart)")
 
     categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
-    selected_cat = st.sidebar.selectbox(
-        "Select a categorical variable", categorical_cols, key="cat_pie"
+    selected_cat = st.radio(
+        "Select a categorical variable", categorical_cols, key="cat_pie", horizontal=True
     )
 
     counts = df[selected_cat].value_counts().reset_index()
@@ -99,11 +99,15 @@ def show_revenue_hist(df: pd.DataFrame) -> None:
     st.subheader("6. Revenue histogram")
     st.write("Revenue is defined as Quantity × UnitPrice.")
 
-    bins = st.slider("Number of bins", 10, 100, 30)
+    bins = st.slider("Number of bins", 10, 100, 30, step=1)
 
     hist_values, bin_edges = np.histogram(df["Revenue"], bins=bins)
-    hist_df = pd.DataFrame({"bin_left": bin_edges[:-1], "count": hist_values})
-    st.bar_chart(hist_df.set_index("bin_left"))
+    # Format bin edges to 2 decimal places for better readability
+    hist_df = pd.DataFrame({
+        "Revenue Range": [f"{bin_edges[i]:.2f} - {bin_edges[i+1]:.2f}" for i in range(len(bin_edges)-1)],
+        "Count": hist_values
+    })
+    st.bar_chart(hist_df.set_index("Revenue Range"))
 
 
 def show_transactions_over_time(df: pd.DataFrame) -> None:
@@ -137,11 +141,37 @@ def compute_pca(df: pd.DataFrame):
 
 def show_pca_scatter(df: pd.DataFrame) -> None:
     st.subheader("8. PCA (2 components) on numeric variables")
-
+    
+    st.markdown("""
+    **PCA Variables Used:**
+    - **Quantity**: Number of people at the table
+    - **UnitPrice**: Average spend per person (total_bill / size)
+    - **Revenue**: Quantity × UnitPrice
+    
+    These three numeric variables are standardized (mean=0, std=1) and then transformed 
+    into 2 principal components that capture the most variance in the data.
+    """)
+    
     pca_df, pca, idx = compute_pca(df)
-
-    st.write("Explained variance ratio:", pca.explained_variance_ratio_)
-    st.scatter_chart(pca_df, x="PC1", y="PC2")
+    
+    var_explained = pca.explained_variance_ratio_
+    st.write(f"**Explained variance ratio:** PC1: {var_explained[0]:.3f} ({var_explained[0]*100:.1f}%), "
+             f"PC2: {var_explained[1]:.3f} ({var_explained[1]*100:.1f}%)")
+    st.write(f"**Total variance explained:** {var_explained.sum():.3f} ({var_explained.sum()*100:.1f}%)")
+    
+    # Use Plotly for better visualization (avoids integer-like appearance issue)
+    import plotly.express as px
+    fig = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        title="PCA 2D Scatter Plot (Standardized Features)",
+        labels={"PC1": f"PC1 ({var_explained[0]*100:.1f}% variance)",
+                "PC2": f"PC2 ({var_explained[1]*100:.1f}% variance)"},
+        hover_data={"index": True}
+    )
+    fig.update_traces(marker=dict(size=5, opacity=0.6))
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def show_pca_colored_by_country(df: pd.DataFrame) -> None:
@@ -168,6 +198,13 @@ def show_pca_colored_by_country(df: pd.DataFrame) -> None:
 
 def show_feature_selection(df: pd.DataFrame) -> None:
     st.subheader("10. Feature selection for Revenue")
+    
+    st.markdown("""
+    **Method:** Random Forest Feature Importance  
+    A Random Forest regression model is trained to predict Revenue using all numeric features 
+    (excluding Revenue itself). The importance scores indicate how much each feature contributes 
+    to predicting Revenue.
+    """)
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     if "Revenue" not in numeric_cols:
@@ -175,6 +212,8 @@ def show_feature_selection(df: pd.DataFrame) -> None:
         return
 
     feature_cols = [c for c in numeric_cols if c != "Revenue"]
+    
+    st.write(f"**Features analyzed:** {', '.join(feature_cols)}")
 
     X = df[feature_cols].fillna(0)
     y = df["Revenue"].fillna(0)
@@ -187,8 +226,20 @@ def show_feature_selection(df: pd.DataFrame) -> None:
     importances = pd.Series(rf.feature_importances_, index=feature_cols).sort_values(
         ascending=False
     )
+    
+    # Create a formatted DataFrame for better display
+    importance_df = pd.DataFrame({
+        "Feature": importances.index,
+        "Importance": importances.values
+    })
+    importance_df["Importance"] = importance_df["Importance"].round(4)
 
     st.write("**Feature importances (higher means more important for predicting Revenue):**")
+    
+    # Display as a table first for exact values
+    st.dataframe(importance_df.set_index("Feature"), use_container_width=True)
+    
+    # Then show as bar chart
     st.bar_chart(importances)
 
 
@@ -248,11 +299,16 @@ def show_dashboard(df: pd.DataFrame) -> None:
         st.write("Revenue distribution")
         bins = 40
         hist_values, bin_edges = np.histogram(df["Revenue"], bins=bins)
-        hist_df = pd.DataFrame({"bin_left": bin_edges[:-1], "count": hist_values})
-        st.bar_chart(hist_df.set_index("bin_left"))
+        # Format bin edges for better readability
+        hist_df = pd.DataFrame({
+            "Revenue Range": [f"{bin_edges[i]:.2f} - {bin_edges[i+1]:.2f}" for i in range(len(bin_edges)-1)],
+            "Count": hist_values
+        })
+        st.bar_chart(hist_df.set_index("Revenue Range"))
 
     with tab3:
         st.write("PCA scatter plot (colored by top 5 'countries')")
+        st.caption("PCA performed on Quantity, UnitPrice, and Revenue (standardized).")
         pca_df, pca, idx = compute_pca(df)
         pca_df = pca_df.copy()
         pca_df["Country"] = df.loc[idx, "Country"]
@@ -261,12 +317,15 @@ def show_dashboard(df: pd.DataFrame) -> None:
 
         import plotly.express as px
 
+        var_explained = pca.explained_variance_ratio_
         fig = px.scatter(
             pca_top5,
             x="PC1",
             y="PC2",
             color="Country",
-            title="PCA (2D) colored by top 5 'countries'",
+            title=f"PCA (2D) colored by top 5 'countries' (Explained variance: {var_explained.sum()*100:.1f}%)",
+            labels={"PC1": f"PC1 ({var_explained[0]*100:.1f}% variance)",
+                    "PC2": f"PC2 ({var_explained[1]*100:.1f}% variance)"}
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -298,8 +357,15 @@ This helps in staffing, promotions, and pricing decisions.
 
 
 def main() -> None:
-    st.set_page_config(page_title="Programming for Data Science – Tips Dataset App", layout="wide")
-    st.title("Programming for Data Science – Tips Dataset Dashboard")
+    st.set_page_config(page_title="Tips Dataset Analytics", layout="wide")
+    st.title("🍽️ Tips Dataset Analytics Dashboard")
+    
+    # Author information
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("**Created by:** Abdullah Gökalp ÇIRAY")
+        st.markdown("**Course:** YBSB3003 – Programming for Data Science")
+        st.markdown("---")
 
     st.markdown(
         """
@@ -326,7 +392,8 @@ Random Forest modelling, and an integrated dashboard.
         "12 – Integrated dashboard": show_dashboard,
     }
 
-    choice = st.sidebar.selectbox("Select page", list(pages.keys()))
+    st.sidebar.markdown("## 📊 Navigation")
+    choice = st.sidebar.radio("Select analysis page", list(pages.keys()), label_visibility="collapsed")
     pages[choice](df)
 
 
