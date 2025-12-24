@@ -168,7 +168,6 @@ def show_pca_scatter(df: pd.DataFrame) -> None:
         title="PCA 2D Scatter Plot (Standardized Features)",
         labels={"PC1": f"PC1 ({var_explained[0]*100:.1f}% variance)",
                 "PC2": f"PC2 ({var_explained[1]*100:.1f}% variance)"},
-        hover_data={"index": True}
     )
     fig.update_traces(marker=dict(size=5, opacity=0.6))
     st.plotly_chart(fig, use_container_width=True)
